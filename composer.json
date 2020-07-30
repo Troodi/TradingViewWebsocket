@@ -1,0 +1,15 @@
+{
+    "name": "troodi/trading-view-websocket",
+    "description": "This package allows you to receive quotes from tradingview in real time from websocket",
+    "type": "library",
+    "require": {
+        "textalk/websocket": "dev-master"
+    },
+    "authors": [
+        {
+            "name": "Rodion Larin",
+            "email": "troodi@ya.ru"
+        }
+    ],
+    "minimum-stability": "dev"
+}
