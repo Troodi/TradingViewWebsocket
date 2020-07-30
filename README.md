@@ -4,7 +4,7 @@ This package allows you to receive quotes from tradingview in real time from web
 
 # How do I run the code?
 
-check example.php file - there is an example of how this class works.
+Сheck example.php file - there is an example of how this class works.
 ```php
 class Main {
   public function __construct()
