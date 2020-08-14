@@ -8,10 +8,14 @@ class TradingViewWebsocket {
   public $tickerData;
   private $sessionRegistered;
   private $class;
+  private $login;
+  private $password;
 
-  public function __construct($class)
+  public function __construct($class, $login = null, $password = null)
   {
       $this->class = $class;
+	    $this->login = $login;
+      $this->password = $password;
       $this->resetWebSocket();
   }
 
@@ -55,7 +59,12 @@ class TradingViewWebsocket {
     $this->subscriptions = [];
     $this->session = $this->generateSession();
     $this->sessionRegistered = false;
-    $this->websocket = new WebSocket\Client("wss://data.tradingview.com/socket.io/websocket", [
+    if($this->login and $this->password){
+      $wss = "wss://prodata.tradingview.com/socket.io/websocket";
+    } else {
+      $wss = "wss://data.tradingview.com/socket.io/websocket";
+    }
+    $this->websocket = new WebSocket\Client($wss, [
       'timeout' => 60, // 1 minute time out
       'headers' => [
         'Origin' => 'https://data.tradingview.com',
@@ -69,7 +78,42 @@ class TradingViewWebsocket {
           if(is_array($packet) and $packet["~protocol~keepalive~"]){
             $this->sendRawMessage("~h~".$packet["~protocol~keepalive~"]);
           } elseif($packet->session_id) {
-            $this->sendMessage("set_auth_token", ["unauthorized_user_token"]);
+            if($this->login and $this->password) {
+              $request_headers = [
+                "accept: */*",
+                "accept-encoding: gzip, deflate, br",
+                "accept-language: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7,lt;q=0.6",
+                "cache-control: no-cache",
+                "content-type: application/x-www-form-urlencoded",
+                "origin: https://www.tradingview.com",
+                "pragma: no-cache",
+                "referer: no-cache",
+                "sec-fetch-dest: empty",
+                "sec-fetch-mode: cors",
+                "sec-fetch-site: same-origin",
+                "user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36",
+                "x-language: en",
+                "x-requested-with: XMLHttpRequest"
+              ];
+              $ch = curl_init();
+              curl_setopt($ch, CURLOPT_POST, true);
+              curl_setopt($ch, CURLOPT_URL, "https://www.tradingview.com/accounts/signin/");
+              curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+              curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+              curl_setopt($ch, CURLOPT_COOKIEFILE, __DIR__ . '/cookie.txt');
+              curl_setopt($ch, CURLOPT_COOKIEJAR, __DIR__ . '/cookie.txt');
+              curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+              curl_setopt($ch, CURLOPT_HTTPHEADER, $request_headers);
+              curl_setopt($ch,CURLOPT_ENCODING , "gzip");
+              curl_setopt($ch, CURLOPT_POSTFIELDS, "feature_source=Header&username=$this->login&password=$this->password&remember=on");
+              $curl_exec = curl_exec($ch);
+              curl_close($ch);
+              $json = json_decode($curl_exec);
+              $auth_token = $json->user->auth_token;
+              $this->sendMessage("set_auth_token", [$auth_token]);
+            } else {
+              $this->sendMessage("set_auth_token", ["unauthorized_user_token"]);
+            }
             $this->sendMessage("quote_create_session", [$this->session]);
             $this->sendMessage("quote_set_fields", [
               $this->session,
