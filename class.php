@@ -182,15 +182,18 @@ class TradingViewWebsocket {
   // IO methods
   private function parseMessages($str){
     $packets = [];
-    while(strlen($str) > 0){
-      preg_match('/~m~(\d+)~m~/', $str, $x);
-      $packet = $this->str_slice($str, strlen($x[0]), strlen($x[0])+$x[1]);
-      if(substr($packet, 0, 3) != "~h~"){
-        $packets[] = json_decode($packet);
+    $x = preg_split ( '/~m~(\d+)~m~/', $str);
+    foreach($x as $pack){
+      if(!strlen($pack)) continue;
+      $pack = strrev($pack);
+      $str = strpos($pack, "}");
+      $pack = substr($pack, $str, strlen($pack));
+      $pack = strrev($pack);
+      if (strpos($pack, '~h~') !== false) {
+        $packets[] = ["~protocol~keepalive~" => substr($pack, 3)];
       } else {
-        $packets[] = ["~protocol~keepalive~" => substr($packet, 3)];
+        $packets[] = json_decode($pack);
       }
-      $str = $this->str_slice($str, strlen($x[0])+$x[1]);
     }
     return $packets;
   }
@@ -208,53 +211,5 @@ class TradingViewWebsocket {
       'm' => $func,
       'p' => $paramList
     ]);
-  }
-
-  function str_slice() {
-    $args = func_get_args();
-    switch (count($args)) {
-      case 1:
-        return $args[0];
-      case 2:
-        $str = $args[0];
-        $str_length = strlen($str);
-        $start = $args[1];
-        if ($start < 0) {
-          if ($start >= -$str_length) {
-            $start = $str_length - abs($start);
-          } else {
-            $start = 0;
-          }
-        }
-        else if ($start >= $str_length) {
-          $start = $str_length;
-        }
-        $length = $str_length - $start;
-        return substr($str, $start, $length);
-      case 3:
-        $str = $args[0];
-        $str_length = strlen($str);
-        $start = $args[1];
-        $end = $args[2];
-        if ($start >= $str_length) {
-          return "";
-        }
-        if ($start < 0) {
-          if ($start < -$str_length) {
-            $start = 0;
-          } else {
-            $start = $str_length - abs($start);
-          }
-        }
-        if ($end <= $start) {
-          return "";
-        }
-        if ($end > $str_length) {
-          $end = $str_length;
-        }
-        $length = $end - $start;
-        return substr($str, $start, $length);
-    }
-    return null;
   }
 }
