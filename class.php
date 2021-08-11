@@ -10,6 +10,7 @@ class TradingViewWebsocket {
   private $class;
   private $login;
   private $password;
+  public $closeSocket = false;
 
   public function __construct($class, $login = null, $password = null)
   {
@@ -54,7 +55,7 @@ class TradingViewWebsocket {
     sort($this->subscriptions);
   }
 
-  private function resetWebSocket(){
+  public function resetWebSocket(){
     $this->tickerData = [];
     $this->subscriptions = [];
     $this->session = $this->generateSession();
@@ -71,13 +72,16 @@ class TradingViewWebsocket {
       ],
     ]);
     while (true) {
+      if($this->closeSocket){
+        break;
+      }
       try {
         $string = $this->websocket->receive();
         $packets = $this->parseMessages($string);
         foreach($packets as $packet){
           if(is_array($packet) and $packet["~protocol~keepalive~"]){
             $this->sendRawMessage("~h~".$packet["~protocol~keepalive~"]);
-          } elseif($packet->session_id) {
+          } elseif(isset($packet->session_id)) {
             if($this->login and $this->password) {
               $request_headers = [
                 "accept: */*",
