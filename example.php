@@ -24,6 +24,7 @@ class Main {
       if($array_tmp[$data["original_name"]] != $data["lp"]) {
         var_dump(date('H:i:s ') . $data["original_name"] . ' - ' . $data["lp"]); // Read info from websocket
         $array_tmp[$data["original_name"]] = $data["lp"];
+        //$obj->closeSocket = true; // Uncomment this, if you run in webrowser as webpage
       }
     }
   }
