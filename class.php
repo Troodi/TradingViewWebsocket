@@ -3,7 +3,7 @@ require dirname(__FILE__) . '/vendor/autoload.php';
 
 class TradingViewWebsocket
 {
-    public $tickerData;
+    	public $tickerData;
 	private $session;
 	private $subscriptions;
 	private $websocket;
